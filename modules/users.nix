@@ -10,9 +10,12 @@
     createHome = true;
     home = "/home/iris";
 
-    # SSH keys
+    # SSH keys from GitHub
+    openssh.authorizedKeys.keyFiles = [];
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDSYfFA3lz5QC4iWoHrnhiIBBVAAtCI4rdPojK9xrXie paul@mac-to-linux"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG5858m5yHShPBI6j6W0UtKZcDtNXM3MTwEmb5B9Gv7d"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBnfnRzOc3sOQTnxWO3ticIlORvQeexu/Yudhfd+I0HI"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEOlBKLnsb1oPzscTGGB7QPPNIa8iMYLV2TRjMZUSKXx"
     ];
   };
 
