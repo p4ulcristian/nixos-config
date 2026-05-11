@@ -9,6 +9,9 @@
   isoImage.isoName = lib.mkForce "nixos-autoinstall.iso";
   isoImage.volumeID = lib.mkForce "NIXOS_AUTO";
 
+  # Instant boot (no menu delay)
+  boot.loader.timeout = lib.mkForce 0;
+
   # Auto-login as root
   services.getty.autologinUser = lib.mkForce "root";
 
@@ -57,24 +60,28 @@
       echo "=========================================="
       echo ""
 
-      # Wait for network
+      # Wait for network (shorter timeout, faster checks)
       echo "Waiting for network..."
-      for i in {1..30}; do
-        if ping -c1 github.com &>/dev/null; then
+      for i in {1..60}; do
+        if ping -c1 -W1 github.com &>/dev/null; then
           echo "Network ready!"
           break
         fi
-        sleep 2
+        echo -n "."
+        sleep 1
       done
+      echo ""
 
-      # Find target disk
+      # Find boot device (to skip it)
+      BOOT_DEV=$(findmnt -n -o SOURCE / | sed 's/[0-9]*$//' | sed 's/p$//')
+      echo "Boot device: $BOOT_DEV (will skip)"
+
+      # Find target disk (skip the boot device)
       DISK=""
-      for d in /dev/vda /dev/sda /dev/nvme0n1; do
-        if [ -b "$d" ]; then
-          if ! mount | grep -q "$d"; then
-            DISK="$d"
-            break
-          fi
+      for d in /dev/nvme0n1 /dev/sda /dev/vda /dev/sdb; do
+        if [ -b "$d" ] && [ "$d" != "$BOOT_DEV" ]; then
+          DISK="$d"
+          break
         fi
       done
 
