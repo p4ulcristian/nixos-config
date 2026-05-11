@@ -19,12 +19,12 @@
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Enable SSH
+  # Enable SSH (key-only, no password)
   services.openssh = {
     enable = true;
     settings = {
-      PermitRootLogin = "yes";  # Disable after first login
-      PasswordAuthentication = true;  # Disable after adding SSH keys
+      PermitRootLogin = "no";
+      PasswordAuthentication = false;
     };
   };
 

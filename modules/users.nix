@@ -10,9 +10,9 @@
     createHome = true;
     home = "/home/iris";
 
-    # SSH keys (add yours here)
+    # SSH keys
     openssh.authorizedKeys.keys = [
-      # "ssh-ed25519 AAAA... iris@machine"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDSYfFA3lz5QC4iWoHrnhiIBBVAAtCI4rdPojK9xrXie paul@mac-to-linux"
     ];
   };
 
