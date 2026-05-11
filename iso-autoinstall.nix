@@ -77,7 +77,7 @@
 
       # Show available disks
       echo "Available disks:"
-      lsblk -d -o NAME,SIZE,MODEL
+      ${pkgs.util-linux}/bin/lsblk -d -o NAME,SIZE,MODEL
 
       # Find target disk - prefer NVMe (internal) over sda (likely USB boot)
       DISK=""
@@ -97,7 +97,7 @@
 
       if [ -z "$DISK" ]; then
         echo "ERROR: No suitable disk found!"
-        lsblk
+        ${pkgs.util-linux}/bin/lsblk
         exit 1
       fi
 
