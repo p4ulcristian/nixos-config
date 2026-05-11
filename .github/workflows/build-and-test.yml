@@ -1,4 +1,4 @@
-name: Build IRIS Ubuntu ISO
+name: Build IRIS Installer
 
 on:
   push:
@@ -14,77 +14,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Download netboot.xyz ISO
         run: |
-          sudo apt-get update
-          sudo apt-get install -y p7zip-full xorriso
-
-      - name: Download Ubuntu Server ISO
-        run: |
-          wget -q https://releases.ubuntu.com/24.04/ubuntu-24.04.4-live-server-amd64.iso -O ubuntu.iso
-          ls -lh ubuntu.iso
-
-      - name: Extract ISO
-        run: |
-          7z x ubuntu.iso -oiso_extract
-          ls -la iso_extract/
-
-      - name: Inject autoinstall config
-        run: |
-          # Create autoinstall directory
-          mkdir -p iso_extract/autoinstall
-
-          # Copy our config
-          cp ubuntu/user-data iso_extract/autoinstall/user-data
-          touch iso_extract/autoinstall/meta-data
-
-          # Copy first-boot script
-          mkdir -p iso_extract/iris
-          cp ubuntu/first-boot.sh iso_extract/iris/
-          chmod +x iso_extract/iris/first-boot.sh
-
-          # Modify grub to auto-select autoinstall
-          sed -i 's/timeout=30/timeout=1/' iso_extract/boot/grub/grub.cfg
-          sed -i 's|linux	/casper/vmlinuz ---|linux	/casper/vmlinuz autoinstall ds=nocloud;s=/cdrom/autoinstall/ ---|' iso_extract/boot/grub/grub.cfg
-
-      - name: Repack ISO
-        run: |
-          xorriso -as mkisofs \
-            -r -V "IRIS_UBUNTU" \
-            -o iris-ubuntu.iso \
-            -J -joliet-long \
-            -b boot/grub/i386-pc/eltorito.img \
-            -c boot.catalog \
-            -no-emul-boot \
-            -boot-load-size 4 \
-            -boot-info-table \
-            --grub2-boot-info \
-            --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
-            -eltorito-alt-boot \
-            -e EFI/boot/bootx64.efi \
-            -no-emul-boot \
-            -isohybrid-gpt-basdat \
-            iso_extract/
-          ls -lh iris-ubuntu.iso
+          # netboot.xyz is ~2MB and can boot any OS
+          wget -q https://boot.netboot.xyz/ipxe/netboot.xyz.iso -O netboot.iso
+          ls -lh netboot.iso
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: IRIS Ubuntu Auto-Installer
-          files: iris-ubuntu.iso
+          name: IRIS Installer
+          files: |
+            netboot.iso
+            ubuntu/user-data
+            ubuntu/first-boot.sh
           make_latest: true
           body: |
-            IRIS Ubuntu Server 24.04 with Nix + home-manager.
+            # IRIS Ubuntu Installer
 
-            **Features:**
-            - Auto-installs Ubuntu Server
-            - User: iris (SSH key auth, passwordless sudo)
-            - Installs Nix automatically
-            - Clones config from GitHub
-            - Runs home-manager on first boot
+            ## Quick Install (netboot - requires internet)
 
-            **Flash to USB:**
+            1. Flash `netboot.iso` to USB (~2MB)
+            2. Boot from USB
+            3. Select: Linux Network Installs → Ubuntu → 26.04
+            4. Once installed, run:
             ```bash
-            sudo dd if=iris-ubuntu.iso of=/dev/rdiskX bs=4m status=progress
+            curl -L https://raw.githubusercontent.com/p4ulcristian/nixos-config/main/ubuntu/install.sh | bash
             ```
+
+            ## What gets installed
+            - Ubuntu Server 26.04
+            - Nix package manager
+            - home-manager with IRIS config
+            - claude, gh, railway, cloudflared
+            - zsh + oh-my-zsh
+            - SSH keys pre-configured
