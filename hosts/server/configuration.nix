@@ -56,6 +56,31 @@
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
+  # ===================
+  # NVIDIA (for compute)
+  # ===================
+  services.xserver.videoDrivers = [ "nvidia" ];
+  hardware.nvidia = {
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    open = false;  # Use proprietary driver
+    modesetting.enable = true;
+  };
+  hardware.graphics.enable = true;  # Required for CUDA
+
+  # ===================
+  # Remove bloat
+  # ===================
+  # No WiFi/Bluetooth
+  hardware.bluetooth.enable = false;
+  networking.wireless.enable = false;
+
+  # No sound
+  services.pulseaudio.enable = false;
+  services.pipewire.enable = false;
+
+  # Minimal firmware (just what's needed)
+  hardware.enableRedistributableFirmware = false;
+
   # System state version (don't change after install)
   system.stateVersion = "24.05";
 }

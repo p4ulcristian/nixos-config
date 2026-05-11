@@ -15,9 +15,16 @@
   # Enable flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Network
+  # Minimal network (no WiFi, no NetworkManager bloat)
   networking.wireless.enable = lib.mkForce false;
-  networking.networkmanager.enable = true;
+  networking.networkmanager.enable = lib.mkForce false;
+  networking.dhcpcd.enable = true;
+
+  # No firmware bloat (no WiFi, no Bluetooth, no GPU firmware)
+  hardware.enableRedistributableFirmware = lib.mkForce false;
+
+  # No sound
+  sound.enable = false;
 
   # Wait for network before auto-install
   systemd.services.autoinstall.wants = [ "network-online.target" ];
