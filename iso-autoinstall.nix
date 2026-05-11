@@ -9,34 +9,29 @@
   isoImage.isoName = lib.mkForce "nixos-autoinstall.iso";
   isoImage.volumeID = lib.mkForce "NIXOS_AUTO";
 
-  # Include our config on the ISO
-  isoImage.contents = [
-    {
-      source = ./.;
-      target = "/nixos-config";
-    }
-  ];
-
   # Auto-login as root
   services.getty.autologinUser = lib.mkForce "root";
 
   # Enable flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Network - disable wireless (conflicts with networkmanager)
+  # Network
   networking.wireless.enable = lib.mkForce false;
   networking.networkmanager.enable = true;
+
+  # Wait for network before auto-install
+  systemd.services.autoinstall.wants = [ "network-online.target" ];
+  systemd.services.autoinstall.after = [ "network-online.target" ];
 
   # Packages needed for install
   environment.systemPackages = with pkgs; [
     git parted dosfstools e2fsprogs
   ];
 
-  # Auto-install script that runs on boot
+  # Auto-install service
   systemd.services.autoinstall = {
     description = "Automatic NixOS Installation";
     wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
 
     serviceConfig = {
       Type = "oneshot";
@@ -55,12 +50,20 @@
       echo "=========================================="
       echo ""
 
-      # Find the target disk (first non-USB, non-CD disk)
-      # For VM testing, this will be /dev/sda or /dev/vda
+      # Wait for network
+      echo "Waiting for network..."
+      for i in {1..30}; do
+        if ping -c1 github.com &>/dev/null; then
+          echo "Network ready!"
+          break
+        fi
+        sleep 2
+      done
+
+      # Find target disk
       DISK=""
       for d in /dev/vda /dev/sda /dev/nvme0n1; do
         if [ -b "$d" ]; then
-          # Skip if it's the live USB/CD
           if ! mount | grep -q "$d"; then
             DISK="$d"
             break
@@ -69,19 +72,14 @@
       done
 
       if [ -z "$DISK" ]; then
-        echo "ERROR: No suitable disk found for installation!"
-        echo "Available block devices:"
+        echo "ERROR: No suitable disk found!"
         lsblk
-        echo ""
-        echo "Dropping to shell. Run manually:"
-        echo "  /run/current-system/sw/bin/manual-install"
         exit 1
       fi
 
       echo "Target disk: $DISK"
-      echo ""
 
-      # Determine partition naming
+      # Partition naming
       if [[ "$DISK" == *"nvme"* ]]; then
         PART1="''${DISK}p1"
         PART2="''${DISK}p2"
@@ -90,12 +88,11 @@
         PART2="''${DISK}2"
       fi
 
-      echo "Partitioning $DISK..."
+      echo "Partitioning..."
       ${pkgs.parted}/bin/parted -s "$DISK" -- mklabel gpt
       ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart ESP fat32 1MiB 512MiB
       ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart primary 512MiB 100%
       ${pkgs.parted}/bin/parted -s "$DISK" -- set 1 esp on
-
       sleep 2
 
       echo "Formatting..."
@@ -107,52 +104,36 @@
       mkdir -p /mnt/boot
       mount "$PART1" /mnt/boot
 
-      echo "Copying configuration..."
-      mkdir -p /mnt/etc
-      cp -r /nixos-config /mnt/etc/nixos
+      echo "Cloning config from GitHub..."
+      ${pkgs.git}/bin/git clone https://github.com/p4ulcristian/nixos-config /mnt/etc/nixos
 
-      echo "Generating hardware configuration..."
+      echo "Generating hardware config..."
       nixos-generate-config --root /mnt
       cp /mnt/etc/nixos/hardware-configuration.nix /mnt/etc/nixos/hosts/server/hardware-configuration.nix
 
-      echo "Installing NixOS (this takes a while)..."
+      echo "Installing NixOS..."
       nixos-install --flake /mnt/etc/nixos#server --no-root-passwd
 
       echo ""
       echo "=========================================="
-      echo "  Installation Complete!"
+      echo "  Setting passwords..."
       echo "=========================================="
-      echo ""
-      echo "Setting passwords..."
-
-      # Set a default password (change after first boot!)
       echo "root:nixos" | chpasswd -R /mnt
       echo "paul:nixos" | chpasswd -R /mnt 2>/dev/null || true
 
       echo ""
-      echo "Default password for root and paul: nixos"
-      echo "CHANGE THIS AFTER FIRST BOOT!"
+      echo "=========================================="
+      echo "  INSTALLATION COMPLETE!"
+      echo "=========================================="
+      echo ""
+      echo "Credentials:"
+      echo "  User: paul"
+      echo "  Password: nixos"
       echo ""
       echo "Rebooting in 10 seconds..."
-      echo "(Remove installation media)"
+      echo "(Remove USB drive)"
       sleep 10
       reboot
-    '';
-  };
-
-  # Manual install script as fallback
-  environment.etc."manual-install.sh" = {
-    mode = "0755";
-    text = ''
-      #!/bin/bash
-      echo "Manual installation mode"
-      echo "Available disks:"
-      lsblk -d -o NAME,SIZE,MODEL
-      echo ""
-      read -p "Enter disk (e.g., sda): " DISK
-
-      # Same install logic but interactive
-      systemctl start autoinstall
     '';
   };
 }

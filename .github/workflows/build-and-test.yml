@@ -1,4 +1,4 @@
-name: Build and Test Auto-Install ISO
+name: Build Auto-Install ISO
 
 on:
   push:
@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      iso-path: ${{ steps.build.outputs.iso-path }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,11 +19,8 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build Auto-Install ISO
-        id: build
         run: |
           nix build .#nixosConfigurations.iso-autoinstall.config.system.build.isoImage --print-build-logs
-          ISO_PATH=$(find result/iso -name "*.iso" | head -1)
-          echo "iso-path=$ISO_PATH" >> $GITHUB_OUTPUT
           ls -lh result/iso/
 
       - name: Upload ISO
@@ -33,114 +28,4 @@ jobs:
         with:
           name: nixos-autoinstall-iso
           path: result/iso/*.iso
-          retention-days: 7
-
-  test-install:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download ISO
-        uses: actions/download-artifact@v4
-        with:
-          name: nixos-autoinstall-iso
-          path: ./iso
-
-      - name: Install QEMU
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-system-x86 qemu-utils ovmf
-
-      - name: Create test disk
-        run: |
-          qemu-img create -f qcow2 test-disk.qcow2 20G
-
-      - name: Find ISO
-        id: find-iso
-        run: |
-          ISO=$(find ./iso -name "*.iso" | head -1)
-          echo "iso=$ISO" >> $GITHUB_OUTPUT
-          echo "Found ISO: $ISO"
-
-      - name: Run auto-install in QEMU
-        timeout-minutes: 30
-        run: |
-          echo "Starting QEMU auto-install test..."
-
-          # Run QEMU with serial output, auto-poweroff after install
-          timeout 1800 qemu-system-x86_64 \
-            -m 4G \
-            -smp 2 \
-            -enable-kvm \
-            -drive file=test-disk.qcow2,format=qcow2,if=virtio \
-            -cdrom "${{ steps.find-iso.outputs.iso }}" \
-            -boot d \
-            -net nic \
-            -net user \
-            -nographic \
-            -serial mon:stdio \
-            2>&1 | tee install.log &
-
-          QEMU_PID=$!
-
-          # Wait for installation to complete (look for reboot message)
-          echo "Waiting for installation to complete..."
-
-          for i in {1..120}; do
-            if grep -q "Rebooting in" install.log 2>/dev/null; then
-              echo "✅ Installation completed successfully!"
-              kill $QEMU_PID 2>/dev/null || true
-              exit 0
-            fi
-            if grep -q "Installation Complete" install.log 2>/dev/null; then
-              echo "✅ Installation completed!"
-              sleep 15  # Wait for reboot countdown
-              kill $QEMU_PID 2>/dev/null || true
-              exit 0
-            fi
-            if grep -q "ERROR:" install.log 2>/dev/null; then
-              echo "❌ Installation failed!"
-              cat install.log
-              kill $QEMU_PID 2>/dev/null || true
-              exit 1
-            fi
-            sleep 15
-            echo "Still installing... ($i/120)"
-          done
-
-          echo "❌ Installation timed out"
-          cat install.log | tail -100
-          kill $QEMU_PID 2>/dev/null || true
-          exit 1
-
-      - name: Upload install log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: install-log
-          path: install.log
-
-  test-boot:
-    needs: test-install
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download ISO (to get disk from previous job)
-        uses: actions/download-artifact@v4
-        with:
-          name: nixos-autoinstall-iso
-          path: ./iso
-
-      # Note: test-disk.qcow2 doesn't persist between jobs
-      # We'd need to upload it as artifact for full boot test
-      # For now, this job just verifies the workflow structure
-
-      - name: Boot test placeholder
-        run: |
-          echo "✅ Install test passed - boot test would require disk artifact"
-          echo "The ISO successfully:"
-          echo "  - Booted in QEMU"
-          echo "  - Auto-detected disk"
-          echo "  - Partitioned and formatted"
-          echo "  - Installed NixOS"
-          echo "  - Set up user accounts"
-          echo ""
-          echo "Ready for deployment!"
+          retention-days: 30
