@@ -12,6 +12,9 @@
   # Instant boot (no menu delay)
   boot.loader.timeout = lib.mkForce 0;
 
+  # Faster squashfs compression (zstd instead of xz)
+  isoImage.squashfsCompression = "zstd -Xcompression-level 6";
+
   # Auto-login as root
   services.getty.autologinUser = lib.mkForce "root";
 
