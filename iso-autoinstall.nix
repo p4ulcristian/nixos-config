@@ -35,7 +35,7 @@
 
   # Packages needed for install
   environment.systemPackages = with pkgs; [
-    git parted dosfstools e2fsprogs
+    git parted dosfstools e2fsprogs util-linux
   ];
 
   # Auto-install service
@@ -72,18 +72,25 @@
       done
       echo ""
 
-      # Find boot device (to skip it)
-      BOOT_DEV=$(findmnt -n -o SOURCE / | sed 's/[0-9]*$//' | sed 's/p$//')
-      echo "Boot device: $BOOT_DEV (will skip)"
+      # Show available disks
+      echo "Available disks:"
+      lsblk -d -o NAME,SIZE,MODEL
 
-      # Find target disk (skip the boot device)
+      # Find target disk - prefer NVMe (internal) over sda (likely USB boot)
       DISK=""
-      for d in /dev/nvme0n1 /dev/sda /dev/vda /dev/sdb; do
-        if [ -b "$d" ] && [ "$d" != "$BOOT_DEV" ]; then
+      for d in /dev/nvme0n1 /dev/nvme1n1 /dev/sdb /dev/vda; do
+        if [ -b "$d" ]; then
           DISK="$d"
           break
         fi
       done
+
+      # Fallback to sda only if nothing else found
+      if [ -z "$DISK" ] && [ -b "/dev/sda" ]; then
+        echo "WARNING: Only /dev/sda found - make sure this is not your boot USB!"
+        sleep 5
+        DISK="/dev/sda"
+      fi
 
       if [ -z "$DISK" ]; then
         echo "ERROR: No suitable disk found!"
