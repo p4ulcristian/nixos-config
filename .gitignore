@@ -1,0 +1,24 @@
+# Build outputs
+result
+result-*
+
+# Secrets (encrypted .age files are OK to commit)
+# But never commit unencrypted secrets!
+*.secret
+*.key
+*.pem
+!*.age
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Temporary
+*.tmp
+*.bak
