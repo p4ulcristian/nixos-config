@@ -23,7 +23,8 @@
   # Enable flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Network
+  # Network - disable wireless (conflicts with networkmanager)
+  networking.wireless.enable = lib.mkForce false;
   networking.networkmanager.enable = true;
 
   # Packages needed for install
