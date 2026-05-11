@@ -57,27 +57,49 @@
       #!/bin/bash
       set -euo pipefail
 
-      echo ""
-      echo "=========================================="
-      echo "  NixOS Auto-Installer"
-      echo "=========================================="
+      clear
+      cat << "ASCIIART"
+
+                      ▄▄▄███████▄▄▄
+                  ▄██████████████████▄
+               ▄███▀▀          ▀▀███▄
+             ▄██▀    ▄▄██████▄▄    ▀██▄
+            ██▀    ▄██▀▀    ▀▀██▄    ▀██
+           ██    ▄██   ▄████▄   ██▄    ██
+          ██    ██   ▄██████▄   ██    ██
+          ██    ██   ██████████   ██    ██
+          ██    ██   ▀██████▀   ██    ██
+           ██    ▀██   ▀████▀   ██▀    ██
+            ██▄    ▀██▄▄    ▄▄██▀    ▄██
+             ▀██▄    ▀▀██████▀▀    ▄██▀
+               ▀███▄▄          ▄▄███▀
+                  ▀██████████████▀
+                      ▀▀▀███▀▀▀
+
+
+               ██╗██████╗ ██╗███████╗
+               ██║██╔══██╗██║██╔════╝
+               ██║██████╔╝██║███████╗
+               ██║██╔══██╗██║╚════██║
+               ██║██║  ██║██║███████║
+               ╚═╝╚═╝  ╚═╝╚═╝╚══════╝
+
+ASCIIART
       echo ""
 
-      # Wait for network (shorter timeout, faster checks)
-      echo "Waiting for network..."
+      # Wait for network
+      printf "  ⠿ Waiting for network"
       for i in {1..60}; do
         if ping -c1 -W1 github.com &>/dev/null; then
-          echo "Network ready!"
+          printf "\r  ✓ Network ready!              \n"
           break
         fi
-        echo -n "."
+        printf "."
         sleep 1
       done
-      echo ""
 
-      # Show available disks
-      echo "Available disks:"
-      ${pkgs.util-linux}/bin/lsblk -d -o NAME,SIZE,MODEL
+      # Show available disks (silent)
+      ${pkgs.util-linux}/bin/lsblk -d -o NAME,SIZE,MODEL > /tmp/disks.txt
 
       # Find target disk - prefer NVMe (internal) over sda (likely USB boot)
       DISK=""
@@ -96,12 +118,12 @@
       fi
 
       if [ -z "$DISK" ]; then
-        echo "ERROR: No suitable disk found!"
-        ${pkgs.util-linux}/bin/lsblk
+        echo "  ✗ No suitable disk found!"
+        cat /tmp/disks.txt
         exit 1
       fi
 
-      echo "Target disk: $DISK"
+      printf "  ✓ Target: %s\n" "$DISK"
 
       # Partition naming
       if [[ "$DISK" == *"nvme"* ]]; then
@@ -112,37 +134,52 @@
         PART2="''${DISK}2"
       fi
 
-      echo "Partitioning..."
-      ${pkgs.parted}/bin/parted -s "$DISK" -- mklabel gpt
-      ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart ESP fat32 1MiB 512MiB
-      ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart primary 512MiB 100%
-      ${pkgs.parted}/bin/parted -s "$DISK" -- set 1 esp on
+      printf "  ⠿ Partitioning..."
+      ${pkgs.parted}/bin/parted -s "$DISK" -- mklabel gpt >/dev/null 2>&1
+      ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart ESP fat32 1MiB 512MiB >/dev/null 2>&1
+      ${pkgs.parted}/bin/parted -s "$DISK" -- mkpart primary 512MiB 100% >/dev/null 2>&1
+      ${pkgs.parted}/bin/parted -s "$DISK" -- set 1 esp on >/dev/null 2>&1
       sleep 2
+      printf "\r  ✓ Partitioned            \n"
 
-      echo "Formatting..."
-      ${pkgs.dosfstools}/bin/mkfs.fat -F 32 -n boot "$PART1"
-      ${pkgs.e2fsprogs}/bin/mkfs.ext4 -L nixos "$PART2"
+      printf "  ⠿ Formatting..."
+      ${pkgs.dosfstools}/bin/mkfs.fat -F 32 -n boot "$PART1" >/dev/null 2>&1
+      ${pkgs.e2fsprogs}/bin/mkfs.ext4 -L nixos "$PART2" >/dev/null 2>&1
+      printf "\r  ✓ Formatted              \n"
 
-      echo "Mounting..."
       mount "$PART2" /mnt
       mkdir -p /mnt/boot
       mount "$PART1" /mnt/boot
 
-      echo "Cloning config from GitHub..."
-      ${pkgs.git}/bin/git clone https://github.com/p4ulcristian/nixos-config /mnt/etc/nixos
+      printf "  ⠿ Cloning config..."
+      ${pkgs.git}/bin/git clone --quiet https://github.com/p4ulcristian/nixos-config /mnt/etc/nixos >/dev/null 2>&1
+      printf "\r  ✓ Config cloned          \n"
 
-      echo "Generating hardware config..."
-      nixos-generate-config --root /mnt
+      printf "  ⠿ Detecting hardware..."
+      nixos-generate-config --root /mnt >/dev/null 2>&1
       cp /mnt/etc/nixos/hardware-configuration.nix /mnt/etc/nixos/hosts/server/hardware-configuration.nix
-
-      echo "Installing NixOS..."
-      nixos-install --flake /mnt/etc/nixos#server --no-root-passwd
+      printf "\r  ✓ Hardware detected      \n"
 
       echo ""
-      echo "=========================================="
-      echo "  Setting passwords..."
-      echo "=========================================="
-      echo "root:nixos" | chpasswd -R /mnt
+      echo "  Installing NixOS..."
+      echo ""
+
+      # Run install with progress display
+      nixos-install --flake /mnt/etc/nixos#server --no-root-passwd 2>&1 | while IFS= read -r line; do
+        # Show copying/building lines with package names
+        if [[ "$line" == *"copying"* ]] || [[ "$line" == *"building"* ]]; then
+          pkg=$(echo "$line" | grep -oP '/nix/store/\S+' | head -1 | sed 's|.*/||' | cut -c1-50)
+          if [ -n "$pkg" ]; then
+            printf "\r  ⠿ %-55s" "$pkg"
+          fi
+        fi
+      done
+      echo ""
+      echo ""
+      echo "  ✓ Installation complete!"
+
+      printf "  ⠿ Configuring user..."
+      echo "root:nixos" | chpasswd -R /mnt 2>/dev/null
       echo "iris:nixos" | chpasswd -R /mnt 2>/dev/null || true
 
       # Create Claude config dir with bypass permissions
@@ -164,20 +201,20 @@
 }
 CLAUDE_SETTINGS
       chown -R 1000:100 /mnt/home/iris/.config
+      printf "\r  ✓ User configured        \n"
 
       echo ""
-      echo "=========================================="
-      echo "  INSTALLATION COMPLETE!"
-      echo "=========================================="
       echo ""
-      echo "Credentials:"
-      echo "  User: iris"
-      echo "  Password: nixos"
+      echo "  ╔══════════════════════════════════════╗"
+      echo "  ║                                      ║"
+      echo "  ║      I R I S   I S   R E A D Y       ║"
+      echo "  ║                                      ║"
+      echo "  ║   User: iris    Password: nixos     ║"
+      echo "  ║                                      ║"
+      echo "  ╚══════════════════════════════════════╝"
       echo ""
-      echo "Claude permissions: ALL BYPASSED"
-      echo ""
-      echo "Rebooting in 10 seconds..."
-      echo "(Remove USB drive)"
+      echo "  Rebooting in 10 seconds..."
+      echo "  (Remove USB drive)"
       sleep 10
       reboot
     '';
