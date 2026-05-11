@@ -26,8 +26,8 @@
   networking.networkmanager.enable = lib.mkForce false;
   networking.dhcpcd.enable = true;
 
-  # No firmware bloat (no WiFi, no Bluetooth, no GPU firmware)
-  hardware.enableRedistributableFirmware = lib.mkForce false;
+  # Include network firmware (needed for most NICs)
+  hardware.enableRedistributableFirmware = lib.mkForce true;
 
   # No sound
   sound.enable = false;
