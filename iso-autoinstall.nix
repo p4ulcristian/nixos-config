@@ -119,7 +119,27 @@
       echo "  Setting passwords..."
       echo "=========================================="
       echo "root:nixos" | chpasswd -R /mnt
-      echo "paul:nixos" | chpasswd -R /mnt 2>/dev/null || true
+      echo "iris:nixos" | chpasswd -R /mnt 2>/dev/null || true
+
+      # Create Claude config dir with bypass permissions
+      mkdir -p /mnt/home/iris/.config/claude
+      cat > /mnt/home/iris/.config/claude/settings.json << 'CLAUDE_SETTINGS'
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "WebFetch(*)"
+    ],
+    "deny": []
+  }
+}
+CLAUDE_SETTINGS
+      chown -R 1000:100 /mnt/home/iris/.config
 
       echo ""
       echo "=========================================="
@@ -127,8 +147,10 @@
       echo "=========================================="
       echo ""
       echo "Credentials:"
-      echo "  User: paul"
+      echo "  User: iris"
       echo "  Password: nixos"
+      echo ""
+      echo "Claude permissions: ALL BYPASSED"
       echo ""
       echo "Rebooting in 10 seconds..."
       echo "(Remove USB drive)"

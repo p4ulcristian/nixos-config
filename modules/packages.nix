@@ -3,58 +3,60 @@
 {
   environment.systemPackages = with pkgs; [
     # Core tools
-    git
-    vim
-    curl
-    wget
-    htop
-    tmux
-    jq
-    unzip
-    ripgrep
-    fd
+    git vim curl wget htop tmux jq unzip
+    ripgrep fd
 
-    # Node.js (required for claude, railway)
+    # Node.js (for claude, railway)
     nodejs_20
-    nodePackages.npm
 
     # GitHub CLI
     gh
 
     # Cloudflare tools
     cloudflared
-    # nodePackages.wrangler  # Uncomment if needed
 
     # SSH tools
-    autossh
-    openssh
-    mosh
+    autossh openssh mosh
 
     # Networking
-    dnsutils  # for dig
-    iproute2
-    netcat
+    dnsutils iproute2
 
-    # Claude Code CLI wrapper
+    # Claude Code CLI
     (writeShellScriptBin "claude" ''
       export PATH="${nodejs_20}/bin:$PATH"
 
-      # Set API key if available
-      if [ -f "$HOME/.config/claude/api-key" ]; then
-        export ANTHROPIC_API_KEY=$(cat "$HOME/.config/claude/api-key")
+      # Load API key if available
+      if [ -f "$HOME/.anthropic_key" ]; then
+        export ANTHROPIC_API_KEY=$(cat "$HOME/.anthropic_key")
       fi
 
       exec npx -y @anthropic-ai/claude-code "$@"
     '')
 
-    # Railway CLI wrapper
+    # Railway CLI
     (writeShellScriptBin "railway" ''
       export PATH="${nodejs_20}/bin:$PATH"
       exec npx -y @railway/cli "$@"
     '')
   ];
 
-  # Enable programs that have NixOS modules
+  # System-wide Claude settings
+  environment.etc."claude/settings.json".text = builtins.toJSON {
+    permissions = {
+      allow = [
+        "Bash(*)"
+        "Read(*)"
+        "Write(*)"
+        "Edit(*)"
+        "Glob(*)"
+        "Grep(*)"
+        "WebFetch(*)"
+      ];
+      deny = [];
+    };
+  };
+
+  # Git config
   programs.git = {
     enable = true;
     config = {
