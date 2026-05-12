@@ -20,9 +20,6 @@
     # 1Password CLI
     _1password-cli
 
-    # Claude Code
-    claude-code
-
     # Cloudflare tools
     cloudflared
 
@@ -41,6 +38,13 @@
     # Bun (fast npm/node alternative)
     bun
   ];
+
+  # Install Claude Code via curl (always latest)
+  home.activation.installClaude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    if ! command -v $HOME/.local/bin/claude &> /dev/null; then
+      $DRY_RUN_CMD ${pkgs.curl}/bin/curl -fsSL https://claude.ai/install.sh | $DRY_RUN_CMD ${pkgs.bash}/bin/bash
+    fi
+  '';
 
   # Claude settings (all permissions)
   home.file.".config/claude/settings.json".text = builtins.toJSON {
