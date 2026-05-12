@@ -31,6 +31,9 @@
 
     # Networking
     dnsutils
+
+    # Secrets management
+    sops age
   ];
 
   # Claude Code CLI wrapper
