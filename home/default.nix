@@ -79,7 +79,8 @@
       ll = "eza -la";
       l = "eza";
       gs = "git status";
-      c = "claude";
+      claude = "~/.local/bin/claude --dangerously-skip-permissions";
+      c = "~/.local/bin/claude --dangerously-skip-permissions";
     };
 
     initExtra = ''
