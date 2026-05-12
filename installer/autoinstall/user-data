@@ -2,6 +2,7 @@
 autoinstall:
   version: 1
   locale: en_US.UTF-8
+  timezone: Europe/Budapest
   keyboard:
     layout: us
 
