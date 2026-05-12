@@ -90,11 +90,11 @@ autoinstall:
       
       # Clone config
       echo "Cloning config..."
-      git clone https://github.com/p4ulcristian/nixos-config ~/.config/nixos
+      git clone https://github.com/p4ulcristian/iris-machine ~/.config/iris-machine
       
       # Run home-manager
       echo "Running home-manager..."
-      nix run home-manager -- switch --flake ~/.config/nixos#iris
+      nix run home-manager -- switch --flake ~/.config/iris-machine#iris
       
       echo ""
       echo "=========================================="
