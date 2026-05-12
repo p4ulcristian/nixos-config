@@ -114,10 +114,12 @@
   programs.git = {
     enable = true;
     settings = {
-      user.name = "Iris";
-      user.email = "iris@example.com";
+      user.name = "Paul";
+      user.email = "p4ulcristian@gmail.com";
       init.defaultBranch = "main";
       core.editor = "vim";
+      credential."https://github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
+      credential."https://gist.github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
     };
   };
 
