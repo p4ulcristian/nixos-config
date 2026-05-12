@@ -12,19 +12,19 @@ curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
 echo "experimental-features = nix-command flakes" | sudo tee /etc/nix/nix.conf
 
 # Log out and back in, then:
-git clone <this-repo> ~/iris-machine
-NIXPKGS_ALLOW_UNFREE=1 nix run home-manager --impure -- switch --flake ~/iris-machine#iris --impure
+git clone <this-repo> ~/work/iris-machine
+NIXPKGS_ALLOW_UNFREE=1 nix run home-manager --impure -- switch --flake ~/work/iris-machine#iris --impure
 ```
 
 ## Usage
 
 ```bash
 # Apply changes after editing config
-home-manager switch --flake ~/iris-machine#iris --impure
+home-manager switch --flake ~/work/iris-machine#iris --impure
 
 # Update all packages
-cd ~/iris-machine && nix flake update
-home-manager switch --flake ~/iris-machine#iris --impure
+cd ~/work/iris-machine && nix flake update
+home-manager switch --flake ~/work/iris-machine#iris --impure
 
 # Rollback
 home-manager generations
