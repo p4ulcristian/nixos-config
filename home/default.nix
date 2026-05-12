@@ -14,9 +14,6 @@
     git vim curl wget htop tmux jq unzip
     ripgrep fd fzf bat eza
 
-    # Claude Code
-    claude-code
-
     # GitHub CLI
     gh
 
