@@ -1,0 +1,24 @@
+#!ipxe
+
+echo
+echo ========================================
+echo   IRIS Ubuntu 26.04 Auto-Installer
+echo ========================================
+echo
+
+set base http://192.168.1.107:8080
+
+echo Loading kernel...
+kernel ${base}/linux iso-url=${base}/ubuntu-26.04-live-server-amd64.iso ip=dhcp autoinstall "ds=nocloud-net;s=${base}/autoinstall/" --- || goto failed
+
+echo Loading initrd...
+initrd ${base}/initrd || goto failed
+
+echo
+echo Booting Ubuntu 26.04 installer...
+boot || goto failed
+
+:failed
+echo
+echo BOOT FAILED!
+shell

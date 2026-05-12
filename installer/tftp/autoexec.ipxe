@@ -1,0 +1,28 @@
+#!ipxe
+
+echo
+echo ========================================
+echo   IRIS Ubuntu Auto-Installer
+echo ========================================
+echo
+
+dhcp || goto failed
+echo IP: ${net0/ip}
+echo
+
+echo Loading kernel...
+kernel http://192.168.1.107:8080/vmlinuz ip=dhcp url=http://192.168.1.107:8080/iris-ubuntu-autoinstall.iso autoinstall ds=nocloud-net\;s=http://192.168.1.107:8080/autoinstall/ quiet --- || goto failed
+
+echo Loading initrd...
+initrd http://192.168.1.107:8080/initrd || goto failed
+
+echo
+echo Booting Ubuntu installer...
+boot || goto failed
+
+:failed
+echo
+echo BOOT FAILED! Error: ${errno}
+echo Press any key to reboot...
+prompt
+reboot

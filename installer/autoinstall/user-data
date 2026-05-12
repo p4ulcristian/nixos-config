@@ -1,0 +1,102 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+  
+  storage:
+    layout:
+      name: direct
+  
+  identity:
+    hostname: iris
+    username: iris
+    password: "$6$xyz$WqSxqLxLQnHPuvJmLgSgjEPSByNpXPJXWJt0cWsOvXJzOk6LmQHKhEPTpYr0zOOmk9OUxmKKlqZTTDYAE9cFP1"
+  
+  ssh:
+    install-server: true
+    allow-pw: true
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG5858m5yHShPBI6j6W0UtKZcDtNXM3MTwEmb5B9Gv7d
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBnfnRzOc3sOQTnxWO3ticIlORvQeexu/Yudhfd+I0HI
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEOlBKLnsb1oPzscTGGB7QPPNIa8iMYLV2TRjMZUSKXx
+  
+  packages:
+    - git
+    - curl
+    - zsh
+    - build-essential
+  
+  late-commands:
+    - echo 'iris ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/iris
+    - chmod 440 /target/etc/sudoers.d/iris
+    - curtin in-target --target=/target -- chsh -s /bin/zsh iris
+    
+    # Create first-boot service that installs Nix
+    - |
+      cat > /target/etc/systemd/system/iris-setup.service << 'SVCEOF'
+      [Unit]
+      Description=IRIS First Boot Setup
+      After=network-online.target
+      Wants=network-online.target
+      ConditionPathExists=!/var/lib/iris-setup-done
+
+      [Service]
+      Type=oneshot
+      User=iris
+      ExecStart=/usr/local/bin/iris-setup.sh
+      ExecStartPost=/usr/bin/touch /var/lib/iris-setup-done
+      RemainAfterExit=true
+      StandardOutput=journal+console
+      StandardError=journal+console
+
+      [Install]
+      WantedBy=multi-user.target
+      SVCEOF
+    
+    # Create the setup script
+    - |
+      cat > /target/usr/local/bin/iris-setup.sh << 'SCRIPTEOF'
+      #!/bin/bash
+      set -e
+      
+      echo ""
+      echo "=========================================="
+      echo "  IRIS First Boot Setup"
+      echo "=========================================="
+      echo ""
+      
+      # Wait for network
+      echo "Waiting for network..."
+      for i in {1..30}; do
+        if ping -c1 github.com &>/dev/null; then
+          echo "Network ready!"
+          break
+        fi
+        sleep 2
+      done
+      
+      # Install Nix
+      echo "Installing Nix..."
+      curl -L https://nixos.org/nix/install | sh -s -- --daemon --yes
+      
+      # Source Nix
+      . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+      
+      # Clone config
+      echo "Cloning config..."
+      git clone https://github.com/p4ulcristian/nixos-config ~/.config/nixos
+      
+      # Run home-manager
+      echo "Running home-manager..."
+      nix run home-manager -- switch --flake ~/.config/nixos#iris
+      
+      echo ""
+      echo "=========================================="
+      echo "  IRIS IS READY!"
+      echo "=========================================="
+      SCRIPTEOF
+    
+    - chmod +x /target/usr/local/bin/iris-setup.sh
+    - curtin in-target --target=/target -- systemctl enable iris-setup.service
