@@ -41,7 +41,8 @@
 
   # Install Claude Code via curl (always latest)
   home.activation.installClaude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    if ! command -v $HOME/.local/bin/claude &> /dev/null; then
+    if [ ! -f "$HOME/.local/bin/claude" ]; then
+      export PATH="${pkgs.curl}/bin:${pkgs.coreutils}/bin:${pkgs.gzip}/bin:${pkgs.gnutar}/bin:$PATH"
       $DRY_RUN_CMD ${pkgs.curl}/bin/curl -fsSL https://claude.ai/install.sh | $DRY_RUN_CMD ${pkgs.bash}/bin/bash
     fi
   '';
