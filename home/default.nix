@@ -35,8 +35,26 @@
     # Secrets management
     sops age
 
-    # Bun (fast npm/node alternative)
+    # JS / Node
     bun
+    nodejs_22
+
+    # JVM (iris-os, manas, ironrainbow run on Clojure)
+    temurin-bin-21
+    clojure
+
+    # Python (iris-stt, iris-tts)
+    python311
+    uv
+
+    # Database (iris-os) — includes psql + server binaries
+    postgresql_18
+
+    # Schema sync tool (iris-os uses psqldef)
+    sqldef
+
+    # Audio (iris-os /api/transcribe + /api/turn-check shell out to ffmpeg)
+    ffmpeg
   ];
 
   # Install Claude Code via curl (always latest)
