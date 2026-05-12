@@ -18,6 +18,7 @@ result-*
 
 # macOS
 .DS_Store
+._*
 
 # Temporary
 *.tmp
