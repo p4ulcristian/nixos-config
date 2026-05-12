@@ -20,6 +20,9 @@
     # GitHub CLI
     gh
 
+    # 1Password CLI
+    _1password
+
     # Cloudflare tools
     cloudflared
 
