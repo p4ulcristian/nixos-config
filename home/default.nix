@@ -37,6 +37,9 @@
 
     # Secrets management
     sops age
+
+    # Bun (fast npm/node alternative)
+    bun
   ];
 
   # Claude settings (all permissions)
