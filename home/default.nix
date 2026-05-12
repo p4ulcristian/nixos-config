@@ -18,7 +18,10 @@
     gh
 
     # 1Password CLI
-    _1password
+    _1password-cli
+
+    # Claude Code
+    claude-code
 
     # Cloudflare tools
     cloudflared
@@ -83,9 +86,9 @@
   # Git
   programs.git = {
     enable = true;
-    userName = "Iris";
-    userEmail = "iris@example.com";
-    extraConfig = {
+    settings = {
+      user.name = "Iris";
+      user.email = "iris@example.com";
       init.defaultBranch = "main";
       core.editor = "vim";
     };
