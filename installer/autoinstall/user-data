@@ -4,7 +4,10 @@ autoinstall:
   locale: en_US.UTF-8
   keyboard:
     layout: us
-  
+
+  source:
+    id: ubuntu-server-minimal
+
   storage:
     layout:
       name: direct
