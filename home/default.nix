@@ -39,22 +39,6 @@
     sops age
   ];
 
-  # Claude Code CLI wrapper
-  home.file.".local/bin/claude" = {
-    executable = true;
-    text = ''
-      #!/bin/bash
-      export PATH="${pkgs.nodejs_20}/bin:$PATH"
-
-      # Load API key if available
-      if [ -f "$HOME/.anthropic_key" ]; then
-        export ANTHROPIC_API_KEY=$(cat "$HOME/.anthropic_key")
-      fi
-
-      exec npx -y @anthropic-ai/claude-code "$@"
-    '';
-  };
-
   # Claude settings (all permissions)
   home.file.".config/claude/settings.json".text = builtins.toJSON {
     permissions = {
