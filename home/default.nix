@@ -26,6 +26,9 @@
     # Cloudflare tools
     cloudflared
 
+    # Railway CLI
+    railway
+
     # SSH tools
     autossh mosh
 
@@ -49,16 +52,6 @@
       fi
 
       exec npx -y @anthropic-ai/claude-code "$@"
-    '';
-  };
-
-  # Railway CLI wrapper
-  home.file.".local/bin/railway" = {
-    executable = true;
-    text = ''
-      #!/bin/bash
-      export PATH="${pkgs.nodejs_20}/bin:$PATH"
-      exec npx -y @railway/cli "$@"
     '';
   };
 
