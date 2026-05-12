@@ -14,8 +14,8 @@
     git vim curl wget htop tmux jq unzip
     ripgrep fd fzf bat eza
 
-    # Node.js (for claude, railway)
-    nodejs_20
+    # Claude Code
+    claude-code
 
     # GitHub CLI
     gh
