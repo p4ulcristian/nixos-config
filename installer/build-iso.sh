@@ -20,6 +20,7 @@ echo "Building autoinstall ISO..."
 xorriso -indev "$ISO_NAME" \
         -outdev "$OUTPUT" \
         -map "$SCRIPT_DIR/autoinstall" /autoinstall \
+        -map "$SCRIPT_DIR/boot/grub/grub.cfg" /boot/grub/grub.cfg \
         -boot_image any replay
 
 echo ""
