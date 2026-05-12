@@ -21,7 +21,7 @@
     gh
 
     # 1Password CLI
-    _1password-cli
+    _1password
 
     # Cloudflare tools
     cloudflared
@@ -102,9 +102,9 @@
   # Git
   programs.git = {
     enable = true;
-    settings = {
-      user.name = "Iris";
-      user.email = "iris@example.com";
+    userName = "Iris";
+    userEmail = "iris@example.com";
+    extraConfig = {
       init.defaultBranch = "main";
       core.editor = "vim";
     };
