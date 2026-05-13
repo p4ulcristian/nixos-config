@@ -3,6 +3,8 @@
 {
   home.username = "iris";
   home.homeDirectory = "/home/iris";
+
+  nixpkgs.config.allowUnfree = true;
   home.stateVersion = "24.05";
 
   # Let home-manager manage itself
@@ -126,6 +128,11 @@
   # SSH client
   programs.ssh = {
     enable = true;
+    matchBlocks = {
+      "ssh.inventoriwill.com" = {
+        proxyCommand = "cloudflared access ssh --hostname %h";
+      };
+    };
   };
 
   # Tmux
